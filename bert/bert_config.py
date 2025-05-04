@@ -1,4 +1,4 @@
-from base.base_config import BaseConfig
+from base import BaseConfig
 
 class BertConfig(BaseConfig):
     model_type: str = "bert"

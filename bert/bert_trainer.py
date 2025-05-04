@@ -1,4 +1,4 @@
-from base.base_trainer import BaseTrainer
+from base import BaseTrainer
 
 class BertTrainer(BaseTrainer):
     def __init__(self, model, optimizer, loss_fn, train_loader, val_loader=None):

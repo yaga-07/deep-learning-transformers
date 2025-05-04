@@ -1,6 +1,6 @@
 import torch.nn as nn
 from bert.bert_config import BertConfig
-from base.base_model import BaseModel
+from base import BaseModel
 
 class BertModel(BaseModel):
     def __init__(self, config: BertConfig):

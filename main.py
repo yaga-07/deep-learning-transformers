@@ -2,18 +2,25 @@ import torch
 from bert.bert_config import BertConfig
 from bert.bert_architecture import BertModel
 from bert.bert_trainer import BertTrainer
-from utils.logger import get_logger
+from utils.logger import RichLogger
 
-logger = get_logger("Main")
+logger = RichLogger("Main")
 
 def main():
-    logger.info("Initializing BertConfig...")
+
+    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    logger.info(f"Using device: {device}")
+
+    logger.new_run("Initializing BertConfig...")
     config = BertConfig()
 
-    logger.info("Creating BertModel...")
+    logger.step(1, "Creating BertModel...")
     model = BertModel(config)
+    params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    logger.info(f"Total parameters: {params}")
+    logger.info(f"Model architecture: {model}")
 
-    logger.info("Testing model forward pass...")
+    logger.step(2, "Testing model forward pass...")
     input_ids = torch.randint(0, config.vocab_size, (1, config.max_position_embeddings))
     output = model(input_ids)
     logger.info(f"Output shape: {output.shape}")

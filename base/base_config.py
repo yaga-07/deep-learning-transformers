@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 @dataclass
 class BaseConfig:
+    model_name: str = "base_model"
     model_type: str = "base"
     vocab_size: int = 30522
     hidden_size: int = 768
