@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from base.base_config import BaseConfig
+from dl.base_config import BaseConfig
 
 class BaseModel(nn.Module):
     def __init__(self, config: BaseConfig):
