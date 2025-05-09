@@ -5,29 +5,12 @@ import torch
 from torch.utils.data import DataLoader
 from tqdm import tqdm
 import logging
+from dl.utils.training_report import TrainingRunReport
 
-class BertTrainer(BaseTrainer):
-    def __init__(self, model, optimizer, loss_fn, train_loader, val_loader=None):
+class BertMLMTrainer(BaseTrainer):
+    def __init__(self, model, optimizer, loss_fn, train_loader, val_loader=None, report_path="bert_training_report.md"):
         super().__init__(model, optimizer, loss_fn, train_loader, val_loader)
-
-    @staticmethod
-    def prepare_data(tokenizer_name, dataset_name, batch_size, max_seq_length):
-        tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
-        dataset = load_dataset(dataset_name)
-
-        def tokenize_function(examples):
-            return tokenizer(examples["text"], truncation=True, padding="max_length", max_length=max_seq_length)
-
-        tokenized_datasets = dataset.map(tokenize_function, batched=True, remove_columns=["text"])
-        data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
-
-        train_loader = DataLoader(
-            tokenized_datasets["train"], batch_size=batch_size, shuffle=True, collate_fn=data_collator
-        )
-        val_loader = DataLoader(
-            tokenized_datasets["validation"], batch_size=batch_size, shuffle=False, collate_fn=data_collator
-        )
-        return train_loader, val_loader
+        self.report = TrainingRunReport(model_name=model.__class__.__name__, output_path=report_path)
 
     def train(self, num_epochs, device):
         logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(message)s")
@@ -53,8 +36,15 @@ class BertTrainer(BaseTrainer):
             avg_loss = epoch_loss / len(self.train_loader)
             logging.info(f"Training Loss: {avg_loss:.4f}")
 
+            avg_val_loss = None
             if self.val_loader:
-                self.validate(device)
+                avg_val_loss = self.validate(device)
+
+            # Log metrics to the report
+            self.report.log_epoch(epoch + 1, avg_loss, avg_val_loss)
+
+        # Save the Markdown report after training
+        self.report.save_report()
 
     def validate(self, device):
         self.model.eval()
@@ -71,3 +61,4 @@ class BertTrainer(BaseTrainer):
 
         avg_val_loss = val_loss / len(self.val_loader)
         logging.info(f"Validation Loss: {avg_val_loss:.4f}")
+        return avg_val_loss
