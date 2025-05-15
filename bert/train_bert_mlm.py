@@ -10,6 +10,7 @@ from termcolor import colored
 from transformers import AutoTokenizer, DataCollatorForLanguageModeling
 from datasets import load_dataset
 from torch.utils.data import DataLoader
+from bert.bert_dataloader import JsonlDataset  # add import
 
 def prepare_data(tokenizer_name, dataset_name, batch_size, max_seq_length):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
@@ -29,6 +30,15 @@ def prepare_data(tokenizer_name, dataset_name, batch_size, max_seq_length):
     )
     return train_loader, val_loader
 
+def prepare_jsonl_data(tokenizer_name, train_path, val_path, batch_size, max_seq_length):
+    tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
+    train_dataset = JsonlDataset(train_path, tokenizer, max_seq_length)
+    val_dataset = JsonlDataset(val_path, tokenizer, max_seq_length)
+    data_collator = DataCollatorForLanguageModeling(tokenizer=tokenizer, mlm=True, mlm_probability=0.15)
+    train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True, collate_fn=data_collator)
+    val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False, collate_fn=data_collator)
+    return train_loader, val_loader
+
 def main():
     parser = argparse.ArgumentParser(
         description=colored("Train BERT for Masked Language Modeling", "cyan", attrs=["bold"]),
@@ -46,12 +56,21 @@ def main():
     model = BertModel(model_config)
 
     # Prepare data
-    train_loader, val_loader = prepare_data(
-        tokenizer_name=config_data["model"]["model_type"],
-        dataset_name=config_data["training"]["dataset_name"],
-        batch_size=config_data["training"]["batch_size"],
-        max_seq_length=config_data["training"]["max_seq_length"]
-    )
+    if config_data["training"].get("jsonl", False):
+        train_loader, val_loader = prepare_jsonl_data(
+            tokenizer_name=config_data["model"]["tokenizer_name"],
+            train_path=config_data["training"]["train_jsonl_path"],
+            val_path=config_data["training"]["val_jsonl_path"],
+            batch_size=config_data["training"]["batch_size"],
+            max_seq_length=config_data["training"]["max_seq_length"]
+        )
+    else:
+        train_loader, val_loader = prepare_data(
+            tokenizer_name=config_data["model"]["tokenizer_name"],
+            dataset_name=config_data["training"]["dataset_name"],
+            batch_size=config_data["training"]["batch_size"],
+            max_seq_length=config_data["training"]["max_seq_length"]
+        )
 
     # Set up optimizer and loss function
     optimizer = AdamW(model.parameters(), lr=config_data["training"]["learning_rate"])
