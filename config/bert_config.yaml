@@ -21,4 +21,4 @@ training:
   num_epochs: 1
   learning_rate: 5e-5
   save_model_path: "./trained_models/bert_model.pt"
-  device: "cuda"  # or "cpu" if no GPU is available
+  device: "mps"  # or "cpu" if no GPU is available, "mps" for Apple silicon

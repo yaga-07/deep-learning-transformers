@@ -17,6 +17,8 @@ class TrainingRunReport:
         self.output_path = output_path
         self.epoch_logs = []
 
+        os.makedirs(model_name, exist_ok=True)
+
     def log_epoch(self, epoch, train_loss, val_loss=None):
         """
         Log metrics for a single epoch.
@@ -49,7 +51,6 @@ class TrainingRunReport:
             report_lines.append(f"| {log['epoch']} | {log['train_loss']:.4f} | {val_loss} |")
 
         report_content = "\n".join(report_lines)
-
-        os.makedirs(os.path.dirname(self.output_path), exist_ok=True)
-        with open(self.output_path, "w") as f:
+        
+        with open(os.path.join(self.model_name, self.output_path), "w") as f:
             f.write(report_content)

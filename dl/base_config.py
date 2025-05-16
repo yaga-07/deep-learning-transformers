@@ -1,6 +1,3 @@
-from dataclasses import dataclass
-
-@dataclass
 class BaseConfig:
     """
     BaseConfig is a configuration class for defining model-specific parameters.

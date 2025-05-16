@@ -44,9 +44,9 @@ class BertLayer(nn.Module):
     def __init__(self, config: BertConfig):
         super().__init__()
         self.attention = MultiHeadSelfAttention(config.hidden_size, config.num_attention_heads)
-        self.attention_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.attention_norm = nn.LayerNorm(config.hidden_size, eps=float(config.layer_norm_eps))
         self.feed_forward = FeedForward(config.hidden_size, config.intermediate_size, config.hidden_dropout_prob)
-        self.feed_forward_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.feed_forward_norm = nn.LayerNorm(config.hidden_size, eps=float(config.layer_norm_eps))
 
     def forward(self, x):
         attention_output = self.attention(x)
@@ -60,11 +60,11 @@ class BertModel(BaseModel):
         super().__init__(config)
         self.embedding = nn.Embedding(config.vocab_size, config.hidden_size)
         self.layers = nn.ModuleList([BertLayer(config) for _ in range(config.num_hidden_layers)])
-        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps)
+        self.layer_norm = nn.LayerNorm(config.hidden_size, eps=float(config.layer_norm_eps))
         self.mlm_head = nn.Sequential(
             nn.Linear(config.hidden_size, config.hidden_size),
             nn.GELU(),
-            nn.LayerNorm(config.hidden_size, eps=config.layer_norm_eps),
+            nn.LayerNorm(config.hidden_size, eps=float(config.layer_norm_eps)),
             nn.Linear(config.hidden_size, config.vocab_size)
         )
 

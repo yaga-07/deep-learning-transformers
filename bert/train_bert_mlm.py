@@ -11,6 +11,8 @@ from transformers import AutoTokenizer, DataCollatorForLanguageModeling
 from datasets import load_dataset
 from torch.utils.data import DataLoader
 from bert.bert_dataloader import JsonlDataset  # add import
+from dl.utils.utils import check_device_and_packages
+
 
 def prepare_data(tokenizer_name, dataset_name, batch_size, max_seq_length):
     tokenizer = AutoTokenizer.from_pretrained(tokenizer_name)
@@ -51,14 +53,18 @@ def main():
     with open(args.config_path, "r") as file:
         config_data = yaml.safe_load(file)
 
+    # Device/package check
+    device = config_data["training"]["device"]
+    check_device_and_packages(device)
+
     # Configure BERT
     model_config = BertConfig(**config_data["model"])
     model = BertModel(model_config)
 
     # Prepare data
-    if config_data["training"].get("jsonl", False):
+    if config_data["training"].get("train_jsonl_path", False):
         train_loader, val_loader = prepare_jsonl_data(
-            tokenizer_name=config_data["model"]["tokenizer_name"],
+            tokenizer_name=config_data["training"]["tokenizer_name"],
             train_path=config_data["training"]["train_jsonl_path"],
             val_path=config_data["training"]["val_jsonl_path"],
             batch_size=config_data["training"]["batch_size"],
@@ -66,14 +72,14 @@ def main():
         )
     else:
         train_loader, val_loader = prepare_data(
-            tokenizer_name=config_data["model"]["tokenizer_name"],
+            tokenizer_name=config_data["training"]["tokenizer_name"],
             dataset_name=config_data["training"]["dataset_name"],
             batch_size=config_data["training"]["batch_size"],
             max_seq_length=config_data["training"]["max_seq_length"]
         )
 
     # Set up optimizer and loss function
-    optimizer = AdamW(model.parameters(), lr=config_data["training"]["learning_rate"])
+    optimizer = AdamW(model.parameters(), lr=float(config_data["training"]["learning_rate"]))
     loss_fn = CrossEntropyLoss()
 
     # Initialize trainer
@@ -83,7 +89,14 @@ def main():
     trainer.train(num_epochs=config_data["training"]["num_epochs"], device=config_data["training"]["device"])
 
     # Save the trained model
-    model.save_pretrained(config_data["training"]["save_model_path"])
+    if config_data["training"].get("save_model_path", False):
+        import os
+        save_path = config_data["training"]["save_model_path"]
+        save_dir = os.path.dirname(save_path)
+        if save_dir:
+            os.makedirs(save_dir, exist_ok=True)
+        print(colored(f"Saving model to {save_path}", "green"))
+        model.save_pretrained(save_path)
 
 if __name__ == "__main__":
     main()
